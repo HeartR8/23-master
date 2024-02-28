@@ -93,14 +93,7 @@ given Loggable[User] with
 
 extension [A](a: A)(using loggable: Loggable[A])
   def jsonLog(message: String): Unit =
-    println(
-      s"""
-      {
-        "timestamp": "${java.time.LocalDateTime.now()}",
-        "message":" $message",
-        "context": ${loggable.jsonLog(a).noSpaces}
-      }"""
-    )
+    println(s"""{"timestamp":"${java.time.LocalDateTime.now()}","message":"$message","context":${loggable.jsonLog(a).noSpaces}}""")
 
 trait Sensitive[A]
 given Sensitive[User] with     {}
