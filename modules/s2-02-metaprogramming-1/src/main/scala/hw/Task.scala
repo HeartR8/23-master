@@ -122,8 +122,8 @@ trait Derivation:
    * println(inst.jsonLog(Boo("x", 42))) // prints {"x" : "x", "y" : 42 }
    */
   inline def derive[T](using m: Mirror.Of[T]): Loggable[T] = inline m match {
-    case mirror: Mirror.ProductOf[T] =>
-      logProduct(mirror, summonLabels[mirror.MirroredElemLabels].zip(summonInst[mirror.MirroredElemTypes]))
+    case p: Mirror.ProductOf[T] => logProduct(p, summonLabels[p.MirroredElemLabels].zip(summonInst[p.MirroredElemTypes]))
+    case s: Mirror.SumOf[T] => logSum(s, summonInstAuto[s.MirroredElemTypes, T].zip(summonLabels[s.MirroredElemLabels]).map(_.swap))
   }
 
   /** II. (*) Вывод Loggable для типов сумм
@@ -147,7 +147,11 @@ trait Derivation:
    *
    * println(inst.jsonLog(KooB(false))) // prints { "KooB" : { "y" : false } }
    */
-  def logSum[T](s: Mirror.SumOf[T], vs: => List[(String, Loggable[?])]): Loggable[T] = ???
+  def logSum[T](s: Mirror.SumOf[T], vs: => List[(String, Loggable[?])]): Loggable[T] = new Loggable[T]:
+    override def jsonLog(a: T): Json = {
+      val (name, loggable) = vs(s.ordinal(a))
+      Json.obj(name -> loggable.asInstanceOf[Loggable[Any]].jsonLog(a))
+    }
 
   /**
    * 2.Поправить метод `derive`, чтобы вывод работал для типов-рекордов и для типов сумм,
@@ -188,7 +192,10 @@ trait Derivation:
    *
    * Для реализации пригодится метод compiletime.summonFrom
    */
-  inline def summonChild[C, P]: Loggable[C] = ???
+  inline def summonChild[C, P]: Loggable[C] = summonFrom {
+    case given Loggable[C] => summon[Loggable[C]]
+    case _ => Loggable.derived(using summonInline[Mirror.Of[C]])
+  }
 
   /**
    * 4. Исправить метод derive, чтобы деривация работала также для типов сумм, выраженных через enum.
@@ -196,4 +203,8 @@ trait Derivation:
    * `inline def summonInstAuto[T <: Tuple, P]: List[Loggable[?]]`
    * похожий на summonInst, но который выводит инстансы через метод summonChild
    */
-  inline def summonInstAuto[T <: Tuple, P]: List[Loggable[?]] = ???
+  inline def summonInstAuto[T <: Tuple, P]: List[Loggable[?]] = inline erasedValue[T] match {
+    case _: (head *: tail) =>
+      summonChild[head, P] :: summonInstAuto[tail, P]
+    case _: EmptyTuple => Nil
+  }
