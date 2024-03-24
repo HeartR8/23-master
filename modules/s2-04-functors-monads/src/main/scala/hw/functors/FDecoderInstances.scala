@@ -3,6 +3,7 @@ package hw.functors
 import hw.functors.FDecoder.FDecoder
 import cats.syntax.traverse.toTraverseOps
 import cats.implicits.toBifunctorOps
+import hw.functors.Decoder.Result
 
 object FDecoderInstances:
   /** Реализуйте декодер для Option и произвольного типа, для которого есть Decoder в скоупе. Если исходная строка -
@@ -47,4 +48,6 @@ object FDecoderInstances:
   /** Реализуйте декодер для DegreesFahrenheit через использование существующего декодера и инстанса Functor. В случае
     * ошибки данный декодер должен возвращать InvalidDegreesFahrenheitValue
     */
-  given FDecoder[DegreesFahrenheit] = ???
+  given FDecoder[DegreesFahrenheit] with
+    def apply(raw: String): Result[DecoderError, DegreesFahrenheit] =
+      intDecoder(raw).map(value => DegreesFahrenheit(value)).leftMap(_ => InvalidDegreesFahrenheitValue)
