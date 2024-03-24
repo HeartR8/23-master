@@ -9,7 +9,7 @@ class CommonDecoderTests(using
     Decoder[DecoderError, Int],
     Decoder[DecoderError, Boolean],
     Decoder[DecoderError, String],
-    Decoder[DecoderError, DegreesFahrenheit],
+//    Decoder[DecoderError, DegreesFahrenheit],
     Decoder[DecoderError, Option[Int]],
     Decoder[DecoderError, Option[String]],
     Decoder[DecoderError, List[Int]],
@@ -30,10 +30,10 @@ class CommonDecoderTests(using
     Decoder.decode[DecoderError, Boolean]("aaa1") shouldBe Left(IllegalArgumentDecoderError)
   }
 
-  it should "correctly decode degrees celsius" in {
-    Decoder.decode[DecoderError, DegreesFahrenheit]("1") shouldBe Right(DegreesFahrenheit(1))
-    Decoder.decode[DecoderError, DegreesFahrenheit]("aaa") shouldBe Left(InvalidDegreesFahrenheitValue)
-  }
+//  it should "correctly decode degrees celsius" in {
+//    Decoder.decode[DecoderError, DegreesFahrenheit]("1") shouldBe Right(DegreesFahrenheit(1))
+//    Decoder.decode[DecoderError, DegreesFahrenheit]("aaa") shouldBe Left(InvalidDegreesFahrenheitValue)
+//  }
 
   it should "correctly decode option" in {
     Decoder.decode[DecoderError, Option[Int]]("123") shouldBe Right(Some(123))

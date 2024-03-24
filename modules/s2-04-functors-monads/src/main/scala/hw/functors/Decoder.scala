@@ -6,8 +6,11 @@ import hw.functors.Decoder.Result
 import scala.util.Try
 
 sealed trait DecoderError
-case object NumberFormatDecoderError      extends DecoderError
-case object IllegalArgumentDecoderError   extends DecoderError
+
+case object NumberFormatDecoderError extends DecoderError
+
+case object IllegalArgumentDecoderError extends DecoderError
+
 case object InvalidDegreesFahrenheitValue extends DecoderError
 
 trait Decoder[+E, +T]:
@@ -27,7 +30,10 @@ object Decoder:
 
   /** Реализуйте Bifunctor для Decoder, используя Either.left проекцию
     */
-  given Bifunctor[Decoder] = ???
+  given Bifunctor[Decoder] = new Bifunctor[Decoder] {
+    def bimap[A, B, C, D](fab: Decoder[A, B])(f: A => C, g: B => D): Decoder[C, D] =
+      raw => fab(raw).left.map(f).map(g)
+  }
 
 object FDecoder:
 
@@ -38,4 +44,7 @@ object FDecoder:
 
   /** Реализуйте Functor для Decoder
     */
-  given Functor[FDecoder] = ???
+  given Functor[FDecoder] = new Functor[FDecoder] {
+    def map[A, B](fa: Decoder[DecoderError, A])(f: A => B): Decoder[DecoderError, B] =
+      raw => fa(raw).map(f)
+  }
