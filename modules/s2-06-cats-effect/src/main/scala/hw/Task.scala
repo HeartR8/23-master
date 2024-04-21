@@ -1,6 +1,9 @@
 package hw
 
 import java.util.UUID
+import cats.effect.kernel.Ref
+import cats.effect.Sync
+import cats.implicits._
 
 /**
  * I. Пул воркеров с балансировкой нагрузки
@@ -24,18 +27,44 @@ import java.util.UUID
  */
 trait WorkerPool[F[_], In, Out]:
   def run(in: In): F[Out]
+
   def add(worker: Worker[F, In, Out]): F[Unit]
+
   def removeAll: F[Unit]
 
 type WorkerId = WorkerId.T
+
 object WorkerId:
   opaque type T <: UUID = UUID
+
   def apply(id: UUID): T = id
 
 case class Worker[F[_], In, Out](id: WorkerId, run: In => F[Out]):
   def apply(in: In): F[Out] = run(in)
 
 object WorkerPool {
-  def of[F[_]/*: добавьте нужные контекст баунды */, In, Out](fs: List[Worker[F, In, Out]]): F[WorkerPool[F, In, Out]] =
-    ???
+  def of[F[_] : Sync, In, Out](fs: List[Worker[F, In, Out]]): F[WorkerPool[F, In, Out]] = {
+    for {
+      workerRefs <- fs.traverse(worker => Ref.of[F, Worker[F, In, Out]](worker))
+      availableWorkers <- Ref.of[F, List[Ref[F, Worker[F, In, Out]]]](workerRefs)
+    } yield new WorkerPool[F, In, Out] {
+      override def run(in: In): F[Out] = {
+        availableWorkers.get.flatMap {
+          case Nil => Sync[F].defer(run(in))
+          case workerRef :: tail =>
+            workerRef.get.flatMap { worker =>
+              worker.run(in)
+            }
+        }
+      }
+
+      override def add(worker: Worker[F, In, Out]): F[Unit] = {
+        Ref.of[F, Worker[F, In, Out]](worker).flatMap { workerRef =>
+          availableWorkers.update(workerRef :: _)
+        }
+      }
+
+      override def removeAll: F[Unit] = availableWorkers.set(List.empty[Ref[F, Worker[F, In, Out]]])
+    }
+  }
 }
