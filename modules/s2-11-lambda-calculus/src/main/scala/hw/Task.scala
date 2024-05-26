@@ -30,6 +30,8 @@ object Term:
 
 import Term.*
 
+import scala.annotation.tailrec
+
 val x = Var(Name("x"))
 val y = Var(Name("y"))
 val z = Var(Name("z"))
@@ -66,13 +68,37 @@ val plus: Term = x =>: y =>: s =>: z =>: x(s)(y(s)(z))
  *   in - терм в котором мы заменяем все свободные переменные x
  *   to - терм на который мы заменяем x
  */
-def betaReduction(x: Name, in: Term, to: Term): Term = ???
+def betaReduction(x: Name, in: Term, to: Term): Term = {
+  def subst(term: Term): Term = term match {
+    case Term.Abs(v, t) if v == x => Term.Abs(v, t)
+    case Term.Abs(v, t) => Term.Abs(v, subst(t))
+    case Term.App(t1, t2) => Term.App(subst(t1), subst(t2))
+    case Term.Var(v) if v == x => to
+    case Term.Var(v) => Term.Var(v)
+  }
+
+  subst(in)
+}
 
 /**
  * 2) Реализуйте полную редукцию терма, выбор стратегии вычисления
  *    (call-by-value / call-by-name / ...) остется за вами
  */
-def reduce(term: Term): Term = ???
+@tailrec
+def reduce(term: Term): Term = {
+  def reduceRec(t: Term): Option[Term] = t match {
+    case Term.Abs(v, body) => reduceRec(body).map(Term.Abs(v, _))
+    case Term.App(Term.Abs(v, body), arg) => Some(betaReduction(v, body, arg))
+    case Term.App(t1, t2) =>
+      reduceRec(t1).map(Term.App(_, t2)).orElse(reduceRec(t2).map(Term.App(t1, _)))
+    case _ => None
+  }
+
+  reduceRec(term) match {
+    case Some(nextTerm) => reduce(nextTerm)
+    case None => term
+  }
+}
 
 /**
  * 3.a) Реализуйте терм `not`, который инвертирует булевы констнаты Черча:
@@ -80,7 +106,7 @@ def reduce(term: Term): Term = ???
  * `not`(`true`) = `false`
  * `not`(`false`) = `true`
  */
-val `not`: Term = ???
+val `not`: Term = x =>: x(`false`)(`true`)
 
 /**
  * 3.б) Реализуйте терм `times`, который перемножает числа в кодировке Черча:
@@ -88,7 +114,7 @@ val `not`: Term = ???
  *  times(`2`)(`2`) = `4`
  *  times(`0`)(`3`) = `0`
  */
-val times: Term = ???
+val times: Term = x =>: y =>: s =>: z =>: x(y(s))(z)
 
 /**
  * 3.в) Реализуйте терм `power`, который возводит число в кодировке Черча в степень:
@@ -97,7 +123,7 @@ val times: Term = ???
  *  power(`0`)(`3`) = `0`
  *  power(`3`)(`0`) = `1`
  */
-val power: Term = ???
+val power: Term = x =>: y =>: s =>: z =>: y(x)(s)(z)
 
 /**
  * 3.г) Реализуйте терм `iszero`, который проверяет является ли число в кодировке Черча нулем:
@@ -105,4 +131,4 @@ val power: Term = ???
  *  iszero(`0`) = `true`
  *  iszero(`5`) = `false`
  */
-val iszero: Term = ???
+val iszero: Term = x =>: x(Term.Abs(s.v, `false`))(`true`)
