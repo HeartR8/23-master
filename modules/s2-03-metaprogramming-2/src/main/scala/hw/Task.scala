@@ -40,16 +40,7 @@ type `10` = Succ[`9`]
 transparent inline def toInt[A <: Nat]: Int =
   inline erasedValue[A] match
     case _: `0` => 0
-    case _: `1` => 1
-    case _: `2` => 2
-    case _: `3` => 3
-    case _: `4` => 4
-    case _: `5` => 5
-    case _: `6` => 6
-    case _: `7` => 7
-    case _: `8` => 8
-    case _: `9` => 9
-    case _: `10` => 10
+    case _: Succ[x] => toInt[x] + 1
 
 /**
  * II.2) Реализовать тип ToInt[X], который на входе в качестве типа A берет натуральное число в кодировке Пеано,
@@ -62,16 +53,7 @@ transparent inline def toInt[A <: Nat]: Int =
 type ToInt[X <: Nat] <: Int =
   X match
     case `0` => 0
-    case `1` => 1
-    case `2` => 2
-    case `3` => 3
-    case `4` => 4
-    case `5` => 5
-    case `6` => 6
-    case `7` => 7
-    case `8` => 8
-    case `9` => 9
-    case `10` => 10
+    case Succ[x] => ToInt[x] + 1
 
 /**
  * II.3) Реализовать тип +[X , Y], который складывает натуральные числа
@@ -111,16 +93,10 @@ type ==[X <: Nat, Y <: Nat] <: Boolean =
  *
  */
 type -[X <: Nat, Y <: Nat] <: Null | Nat =
-  X match
-    case Zero => Y match {
-      case Succ[z] => Null
-      case Zero => Zero
-    }
-    case Succ[x] => Y match {
-      case Succ[z] => x - z
-      case Zero => X
-    }
-    case _ => Null
+  (X, Y) match
+    case (Zero, Succ[y]) => Null
+    case (Succ[x], Succ[y]) => x - y
+    case (X, Y) => X
 
 
 /**
