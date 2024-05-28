@@ -104,10 +104,9 @@ trait Derivation:
    */
   inline def logProduct[T](p: Mirror.ProductOf[T], vs: => List[(String, Loggable[?])]): Loggable[T] = new Loggable[T] {
     def jsonLog(a: T): Json = {
-      val labels = summonLabels[p.MirroredElemLabels]
-      Json.obj(labels.zip(summonInst[p.MirroredElemTypes]).map {
+      Json.obj(vs.map {
         case (name, lbl) =>
-          name -> lbl.asInstanceOf[Loggable[Any]].jsonLog(a.asInstanceOf[Product].productElement(labels.indexOf(name)))
+          name -> lbl.asInstanceOf[Loggable[Any]].jsonLog(a.asInstanceOf[Product].productElement(vs.map(value => value._1).indexOf(name)))
       }: _*)
     }
   }
@@ -123,7 +122,7 @@ trait Derivation:
    */
   inline def derive[T](using m: Mirror.Of[T]): Loggable[T] = inline m match {
     case p: Mirror.ProductOf[T] => logProduct(p, summonLabels[p.MirroredElemLabels].zip(summonInst[p.MirroredElemTypes]))
-    case s: Mirror.SumOf[T] => logSum(s, summonInstAuto[s.MirroredElemTypes, T].zip(summonLabels[s.MirroredElemLabels]).map(_.swap))
+    case s: Mirror.SumOf[T] => logSum(s, summonLabels[s.MirroredElemLabels].zip(summonInstAuto[s.MirroredElemTypes, T]))
   }
 
   /** II. (*) Вывод Loggable для типов сумм
