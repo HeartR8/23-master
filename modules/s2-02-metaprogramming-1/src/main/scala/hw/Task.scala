@@ -15,18 +15,6 @@ trait Loggable[A]:
 object Loggable extends Instances, Derivation:
   inline def derived[T](using m: Mirror.Of[T]): Loggable[T] = derive
 
-  given Loggable[Int] with {
-    def jsonLog(a: Int): Json = Json.fromInt(a)
-  }
-
-  given Loggable[Boolean] with {
-    def jsonLog(a: Boolean): Json = Json.fromBoolean(a)
-  }
-
-  given Loggable[String] with {
-    def jsonLog(a: String): Json = Json.fromString(a)
-  }
-
 /**
  *  I. Вывод Loggable для рекордов
  *
@@ -50,6 +38,18 @@ trait Instances {
 
   given[A] (using Loggable[A]): Loggable[List[A]] with {
     def jsonLog(a: List[A]): Json = Json.fromValues(a.map(summon[Loggable[A]].jsonLog))
+  }
+
+  given Loggable[Int] with {
+    def jsonLog(a: Int): Json = Json.fromInt(a)
+  }
+
+  given Loggable[Boolean] with {
+    def jsonLog(a: Boolean): Json = Json.fromBoolean(a)
+  }
+
+  given Loggable[String] with {
+    def jsonLog(a: String): Json = Json.fromString(a)
   }
 }
 
@@ -105,8 +105,8 @@ trait Derivation:
   inline def logProduct[T](p: Mirror.ProductOf[T], vs: => List[(String, Loggable[?])]): Loggable[T] = new Loggable[T] {
     def jsonLog(a: T): Json = {
       val labels = summonLabels[p.MirroredElemLabels]
-      Json.obj(labels.zip(summonInst[p.MirroredElemTypes]).zip(vs).map {
-        case ((name, lbl), (_, _)) =>
+      Json.obj(labels.zip(summonInst[p.MirroredElemTypes]).map {
+        case (name, lbl) =>
           name -> lbl.asInstanceOf[Loggable[Any]].jsonLog(a.asInstanceOf[Product].productElement(labels.indexOf(name)))
       }: _*)
     }
