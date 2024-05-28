@@ -90,68 +90,68 @@ class Tests extends munit.FunSuite:
     )
     assertEquals(result, expected, result)
 
-//  test("II.1 logSum"):
-//    sealed trait Koo
-//    case class KooI(x: Int) extends Koo derives Loggable
-//    case class KooB(y: Boolean) extends Koo derives Loggable
-//
-//    val inst = Loggable.logSum[Koo](
-//      summonInline[Mirror.SumOf[Koo]],
-//      List("KooI" -> summon[Loggable[KooI]], "KooB" -> summon[Loggable[KooB]])
-//    )
-//
-//    val result = inst.jsonLog(KooB(false))
-//    val expected = Json.obj(
-//      "KooB" -> Json.obj("y" -> false.asJson)
-//    )
-//
-//    assertEquals(result, expected, result)
-//
-//  test("II.2 derive sealed trait"):
-//    sealed trait Koo derives Loggable
-//    case class KooI(x: Int) extends Koo
-//    object KooI:
-//      given Loggable[KooI] with
-//        override def jsonLog(a: KooI): Json = a.x.asJson
-//
-//    case class KooB(y: Boolean, z: List[String]) extends Koo derives Loggable
-//
-//    val result = summon[Loggable[Koo]].jsonLog(KooI(42))
-//    val expected = Json.obj(
-//      "KooI" -> 42.asJson
-//    )
-//
-//    assertEquals(result, expected, result)
-//
-//  test("II.3 summonChild"):
-//    enum Koo:
-//      case KooI(x: Int)
-//      case KooB(y: Boolean)
-//
-//    object Koo:
-//      given Loggable[KooB] with
-//        override def jsonLog(a: Koo.KooB): Json = Json.Null
-//
-//    val result1 = Loggable.summonChild[Koo.KooI, Koo].jsonLog(Koo.KooI(42))
-//    val expected1 = Json.obj("x" -> 42.asJson)
-//    assertEquals(result1, expected1, result1)
-//
-//    val result2 = Loggable.summonChild[Koo.KooB, Koo].jsonLog(Koo.KooB(true))
-//    assertEquals(result2, Json.Null, result2)
-//
-//
-//  test("II.4 derive sum"):
-//    enum Koo derives Loggable:
-//      case KooI(x: Int)
-//      case KooB(y: Boolean)
-//
-//    object Koo:
-//      given Loggable[KooB] with
-//        override def jsonLog(a: Koo.KooB): Json = Json.Null
-//
-//    val result1 = summon[Loggable[Koo]].jsonLog(Koo.KooI(42))
-//    val expected1 = Json.obj("KooI" -> Json.obj("x" -> 42.asJson))
-//    assertEquals(result1, expected1, result1)
-//
-//    val result2 = summon[Loggable[Koo]].jsonLog(Koo.KooB(true))
-//    assertEquals(result2, Json.obj("KooB" -> Json.Null), result2)
+  test("II.1 logSum"):
+    sealed trait Koo
+    case class KooI(x: Int) extends Koo derives Loggable
+    case class KooB(y: Boolean) extends Koo derives Loggable
+
+    val inst = Loggable.logSum[Koo](
+      summonInline[Mirror.SumOf[Koo]],
+      List("KooI" -> summon[Loggable[KooI]], "KooB" -> summon[Loggable[KooB]])
+    )
+
+    val result = inst.jsonLog(KooB(false))
+    val expected = Json.obj(
+      "KooB" -> Json.obj("y" -> false.asJson)
+    )
+
+    assertEquals(result, expected, result)
+
+  test("II.2 derive sealed trait"):
+    sealed trait Koo derives Loggable
+    case class KooI(x: Int) extends Koo
+    object KooI:
+      given Loggable[KooI] with
+        override def jsonLog(a: KooI): Json = a.x.asJson
+
+    case class KooB(y: Boolean, z: List[String]) extends Koo derives Loggable
+
+    val result = summon[Loggable[Koo]].jsonLog(KooI(42))
+    val expected = Json.obj(
+      "KooI" -> 42.asJson
+    )
+
+    assertEquals(result, expected, result)
+
+  test("II.3 summonChild"):
+    enum Koo:
+      case KooI(x: Int)
+      case KooB(y: Boolean)
+
+    object Koo:
+      given Loggable[KooB] with
+        override def jsonLog(a: Koo.KooB): Json = Json.Null
+
+    val result1 = Loggable.summonChild[Koo.KooI, Koo].jsonLog(Koo.KooI(42))
+    val expected1 = Json.obj("x" -> 42.asJson)
+    assertEquals(result1, expected1, result1)
+
+    val result2 = Loggable.summonChild[Koo.KooB, Koo].jsonLog(Koo.KooB(true))
+    assertEquals(result2, Json.Null, result2)
+
+
+  test("II.4 derive sum"):
+    enum Koo derives Loggable:
+      case KooI(x: Int)
+      case KooB(y: Boolean)
+
+    object Koo:
+      given Loggable[KooB] with
+        override def jsonLog(a: Koo.KooB): Json = Json.Null
+
+    val result1 = summon[Loggable[Koo]].jsonLog(Koo.KooI(42))
+    val expected1 = Json.obj("KooI" -> Json.obj("x" -> 42.asJson))
+    assertEquals(result1, expected1, result1)
+
+    val result2 = summon[Loggable[Koo]].jsonLog(Koo.KooB(true))
+    assertEquals(result2, Json.obj("KooB" -> Json.Null), result2)
