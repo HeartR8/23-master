@@ -3,6 +3,7 @@ package hw
 import io.circe.{Encoder, Json}
 import io.circe.syntax._
 import scala.util.NotGiven
+import scala.deriving.Mirror
 
 /** II. Знакомимся с новыми ключевыми словами из 3ей скалы: opaque, extension, given, using
   *
@@ -91,15 +92,15 @@ given Loggable[User] with
       "token" -> summon[Loggable[JwtToken]].jsonLog(user.token)
     )
 
-extension [A](a: A)(using loggable: Loggable[A])
-  def jsonLog(message: String): Unit =
-    println(s"""{"timestamp":"${java.time.LocalDateTime.now()}","message":"$message","context":${loggable.jsonLog(a).noSpaces}}""")
-
 trait Sensitive[A]
-given Sensitive[User] with     {}
-given Sensitive[Name] with     {}
-given Sensitive[JwtToken] with {}
+object Sensitive:
+  given Sensitive[Name.T] = new Sensitive[Name.T] {}
+  inline def derived[A: Mirror.Of]: Sensitive[A] = new Sensitive[A] {}
 
 object Loggable:
+  extension [A](a: A)(using loggable: Loggable[A])
+    def jsonLog(message: String): Unit =
+      println(s"""{"timestamp":"${java.time.LocalDateTime.now()}","message":"$message","context":${loggable.jsonLog(a).noSpaces}}""")
+
   given [A](using encoder: Encoder[A], notGiven: NotGiven[Sensitive[A]]): Loggable[A] with
     def jsonLog(a: A): Json = a.asJson
