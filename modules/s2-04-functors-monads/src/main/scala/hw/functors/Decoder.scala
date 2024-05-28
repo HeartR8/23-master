@@ -32,7 +32,7 @@ object Decoder:
     */
   given Bifunctor[Decoder] = new Bifunctor[Decoder] {
     def bimap[A, B, C, D](fab: Decoder[A, B])(f: A => C, g: B => D): Decoder[C, D] =
-      raw => fab(raw).left.map(f).map(g)
+      raw => fab(raw).map(g).left.map(f)
   }
 
 object FDecoder:

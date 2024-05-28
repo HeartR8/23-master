@@ -12,7 +12,7 @@ object FDecoderInstances:
   given [T](using decoder: FDecoder[T]): FDecoder[Option[T]] = {
     case "<none>"           => Right(None)
     case null               => Right(None)
-    case str if str.isEmpty => Right(None)
+    case "" => Right(None)
     case str                => decoder.apply(str).map(Some(_))
   }
 
@@ -26,14 +26,14 @@ object FDecoderInstances:
         Right(List.empty)
       case _ =>
         val decodedElements = elements.map(FDecoder.decode)
-        val resultList      = decodedElements.toList.sequence
+        val resultList      = decodedElements.toList.traverse(identity)
         resultList.map(_.toList)
     }
   }
 
   /** Реализуйте декодер из строки в строку
     */
-  given strDecoder: FDecoder[String] = (raw: String) => Right(raw)
+  given strDecoder: FDecoder[String] = Right.apply(_)
 
   /** Реализуйте декодер из строки в число, используя `NumberFormatDecoderError` в результате в случае, если строка - не
     * число

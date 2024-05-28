@@ -46,7 +46,7 @@ object UserRepository:
    */
   given[F[_] : MonadThrow]: MonadThrow[Op[F, *]] =
   new MonadThrow[Op[F, *]] {
-    def pure[A](x: A): Op[F, A] = userRepository => MonadThrow[F].pure(x)
+    def pure[A](x: A): Op[F, A] = _ => MonadThrow[F].pure(x)
 
     def flatMap[A, B](fa: Op[F, A])(f: A => Op[F, B]): Op[F, B] = userRepository =>
       fa(userRepository).flatMap(a => f(a)(userRepository))

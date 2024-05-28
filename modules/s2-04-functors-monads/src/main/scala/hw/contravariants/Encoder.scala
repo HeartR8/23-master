@@ -21,31 +21,34 @@ object Encoder:
 
 object EncoderInstances:
 
+  given summoner[T: Encoder]: Encoder[T] =
+    summon[Encoder[T]]
+
   /** Реализуйте Encoder для Option и произвольного типа, для которого есть Encoder в скоупе. None должен
     * преобразовываться в значение `<none>`
     */
   given [T](using e: Encoder[T]): Encoder[Option[T]] = {
     case None    => "<none>"
-    case Some(a) => summon[Encoder[T]].apply(a)
+    case Some(a) => summoner[T].apply(a)
   }
 
   /** Реализуйте Encoder для List и произвольного типа, для которого есть Encoder в скоупе. Элементы листа в
     * результирующей строке должны быть разделены запятой.
     */
-  given [T: Encoder]: Encoder[List[T]] = list => list.map(summon[Encoder[T]].apply).mkString(",")
+  given [T: Encoder]: Encoder[List[T]] = list => list.map(summoner[T].apply).mkString(",")
 
   /** Реализуйте encoder для строки
     */
-  given Encoder[String] = str => str
+  given Encoder[String] = identity(_)
 
   /** Реализуйте encoder числа в строку
     */
-  given Encoder[Int] = num => num.toString
+  given Encoder[Int] = _.toString
 
   /** Реализуйте encoder булева значения в строку
     */
-  given Encoder[Boolean] = bool => bool.toString
+  given Encoder[Boolean] = _.toString
 
   /** Реализуйте encoder для DegreesFahrenheit через использование существующего encoder и Contravariant
     */
-  given Encoder[DegreesFahrenheit] = summon[Encoder[Int]].contramap(_.value)
+  given Encoder[DegreesFahrenheit] = summoner[Int].contramap(_.value)

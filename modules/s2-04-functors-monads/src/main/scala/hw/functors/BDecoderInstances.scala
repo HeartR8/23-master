@@ -13,7 +13,7 @@ object BDecoderInstances:
   given [E, T](using decoder: Decoder[E, T]): Decoder[E, Option[T]] = {
     case "<none>"           => Right(None)
     case null               => Right(None)
-    case str if str.isEmpty => Right(None)
+    case "" => Right(None)
     case str                => decoder.apply(str).map(Some(_))
   }
 
@@ -27,14 +27,14 @@ object BDecoderInstances:
         Right(List.empty)
       case _ =>
         val decodedElements = elements.map(decoder.apply)
-        val resultList      = decodedElements.toList.sequence
+        val resultList      = decodedElements.toList.traverse(identity)
         resultList.map(_.toList)
     }
   }
 
   /** Реализуйте декодер из строки в строку
     */
-  given Decoder[DecoderError, String] = (raw: String) => Right(raw)
+  given Decoder[DecoderError, String] = Right.apply(_)
 
   /** Реализуйте декодер из строки в число с заданным типом ошибки, используя Decoder.attempt() и Bifunctor
     */
