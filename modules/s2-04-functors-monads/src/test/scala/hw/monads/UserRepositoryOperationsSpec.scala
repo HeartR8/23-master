@@ -1,6 +1,5 @@
 package hw.monads
 
-import cats.MonadThrow
 import cats.syntax.flatMap.toFlatMapOps
 import cats.syntax.functor.toFunctorOps
 

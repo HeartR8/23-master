@@ -1,6 +1,5 @@
 package hw.contravariants
 
-import hw.contravariants.Encoder
 import org.scalatest.Inside
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
