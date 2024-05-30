@@ -9,6 +9,8 @@ trait Encoder[-T]:
   def apply(value: T): String
 
 object Encoder:
+  def apply[T: Encoder]: Encoder[T] =
+    summon[Encoder[T]]
   def encode[T](value: T)(using encoder: Encoder[T]): String =
     encoder(value)
 
@@ -21,21 +23,18 @@ object Encoder:
 
 object EncoderInstances:
 
-  given summoner[T: Encoder]: Encoder[T] =
-    summon[Encoder[T]]
-
   /** Реализуйте Encoder для Option и произвольного типа, для которого есть Encoder в скоупе. None должен
     * преобразовываться в значение `<none>`
     */
   given [T](using e: Encoder[T]): Encoder[Option[T]] = {
     case None    => "<none>"
-    case Some(a) => summoner[T].apply(a)
+    case Some(a) => Encoder[T].apply(a)
   }
 
   /** Реализуйте Encoder для List и произвольного типа, для которого есть Encoder в скоупе. Элементы листа в
     * результирующей строке должны быть разделены запятой.
     */
-  given [T: Encoder]: Encoder[List[T]] = list => list.map(summoner[T].apply).mkString(",")
+  given [T: Encoder]: Encoder[List[T]] = list => list.map(Encoder[T].apply).mkString(",")
 
   /** Реализуйте encoder для строки
     */
@@ -51,4 +50,4 @@ object EncoderInstances:
 
   /** Реализуйте encoder для DegreesFahrenheit через использование существующего encoder и Contravariant
     */
-  given Encoder[DegreesFahrenheit] = summoner[Int].contramap(_.value)
+  given Encoder[DegreesFahrenheit] = Encoder[Int].contramap(_.value)

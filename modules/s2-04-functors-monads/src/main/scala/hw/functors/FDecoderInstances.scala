@@ -24,10 +24,7 @@ object FDecoderInstances:
     elements match {
       case Array("") =>
         Right(List.empty)
-      case _ =>
-        val decodedElements = elements.map(FDecoder.decode)
-        val resultList      = decodedElements.toList.traverse(identity)
-        resultList.map(_.toList)
+      case _ => elements.toList.traverse(FDecoder.decode)
     }
   }
 

@@ -26,9 +26,7 @@ object BDecoderInstances:
       case Array("") =>
         Right(List.empty)
       case _ =>
-        val decodedElements = elements.map(decoder.apply)
-        val resultList      = decodedElements.toList.traverse(identity)
-        resultList.map(_.toList)
+        elements.toList.traverse(decoder.apply)
     }
   }
 
