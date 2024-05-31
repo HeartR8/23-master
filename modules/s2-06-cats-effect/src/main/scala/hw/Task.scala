@@ -5,7 +5,7 @@ import cats.effect.kernel.Async
 import cats.effect.implicits.monadCancelOps_
 import cats.effect.std.{Queue, Semaphore}
 import cats.syntax.all._
-
+import cats.effect.Ref
 
 /**
  * I. Пул воркеров с балансировкой нагрузки
@@ -50,6 +50,7 @@ object WorkerPool {
       queue <- Queue.bounded[F, Worker[F, In, Out]](fs.size)
       semaphore <- Semaphore[F](fs.size)
       _ <- fs.traverse(queue.offer)
+      totalWorkersRef <- Ref.of[F, Int](fs.size)
     yield new:
       def run(in: In): F[Out] =
         semaphore.acquire >>
@@ -60,9 +61,14 @@ object WorkerPool {
           }
 
       def add(worker: Worker[F, In, Out]): F[Unit] =
-        semaphore.release >> queue.offer(worker)
+        semaphore.release >> queue.offer(worker) >> totalWorkersRef.update(_ + 1)
 
       def removeAll: F[Unit] =
-        semaphore.acquireN(fs.size) >>
-          queue.take.replicateA(fs.size).void
+        for
+          totalWorkers <- totalWorkersRef.get
+          _ <- semaphore.acquireN(totalWorkers)
+          _ <- queue.take.replicateA(totalWorkers).void
+          _ <- totalWorkersRef.set(0)
+          _ <- semaphore.releaseN(totalWorkers)
+        yield ()
 }
