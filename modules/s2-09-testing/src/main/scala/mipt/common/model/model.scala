@@ -7,6 +7,8 @@ object UserId:
 
   def apply(id: String): Id = id
 
-type UserId = UserId.Id
 given Encoder[UserId] = Encoder[String].contramap(identity)
+
 given Decoder[UserId] = Decoder[String].map(UserId(_))
+
+type UserId = UserId.Id
