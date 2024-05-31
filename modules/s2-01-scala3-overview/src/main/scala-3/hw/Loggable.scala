@@ -49,7 +49,7 @@ trait Loggable[A]:
 
   def contramap[B](f: B => A): Loggable[B] = (b: B) => jsonLog(f(b))
 
-case class JwtToken(token: String, exp: Long)
+case class JwtToken(token: String, exp: Long) derives Sensitive
 
 given Loggable[JwtToken] with
   def jsonLog(token: JwtToken): Json = Json.obj(
@@ -82,22 +82,24 @@ case class User(
     login: Login,
     name: Name,
     token: JwtToken
-)
+) derives Sensitive
 
 given Loggable[User] with
   def jsonLog(user: User): Json =
     Json.obj(
-      "login" -> summon[Loggable[Login]].jsonLog(user.login),
-      "name"  -> summon[Loggable[Name]].jsonLog(user.name),
-      "token" -> summon[Loggable[JwtToken]].jsonLog(user.token)
+      "login" -> Loggable[Login].jsonLog(user.login),
+      "name"  -> Loggable[Name].jsonLog(user.name),
+      "token" -> Loggable[JwtToken].jsonLog(user.token)
     )
 
 trait Sensitive[A]
 object Sensitive:
-  given Sensitive[Name.T] = new Sensitive[Name.T] {}
   inline def derived[A: Mirror.Of]: Sensitive[A] = new Sensitive[A] {}
 
 object Loggable:
+  def apply[T: Loggable]: Loggable[T] =
+    summon[Loggable[T]]
+
   extension [A](a: A)(using loggable: Loggable[A])
     def jsonLog(message: String): Unit =
       println(s"""{"timestamp":"${java.time.LocalDateTime.now()}","message":"$message","context":${loggable.jsonLog(a).noSpaces}}""")
