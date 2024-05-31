@@ -1,6 +1,11 @@
 package hw
 
 import java.util.UUID
+import cats.effect.kernel.Async
+import cats.effect.implicits.monadCancelOps_
+import cats.effect.std.{Queue, Semaphore}
+import cats.syntax.all._
+import cats.effect.Ref
 
 /**
  * I. Пул воркеров с балансировкой нагрузки
@@ -24,18 +29,46 @@ import java.util.UUID
  */
 trait WorkerPool[F[_], In, Out]:
   def run(in: In): F[Out]
+
   def add(worker: Worker[F, In, Out]): F[Unit]
+
   def removeAll: F[Unit]
 
 type WorkerId = WorkerId.T
+
 object WorkerId:
   opaque type T <: UUID = UUID
+
   def apply(id: UUID): T = id
 
 case class Worker[F[_], In, Out](id: WorkerId, run: In => F[Out]):
   def apply(in: In): F[Out] = run(in)
 
 object WorkerPool {
-  def of[F[_]/*: добавьте нужные контекст баунды */, In, Out](fs: List[Worker[F, In, Out]]): F[WorkerPool[F, In, Out]] =
-    ???
+  def of[F[_] : Async, In, Out](fs: List[Worker[F, In, Out]]): F[WorkerPool[F, In, Out]] =
+    for
+      queue <- Queue.bounded[F, Worker[F, In, Out]](fs.size)
+      semaphore <- Semaphore[F](fs.size)
+      _ <- fs.traverse(queue.offer)
+      totalWorkersRef <- Ref.of[F, Int](fs.size)
+    yield new:
+      def run(in: In): F[Out] =
+        semaphore.acquire >>
+          queue.take.flatMap { worker =>
+            worker.run(in).guarantee(
+              queue.offer(worker) >> semaphore.release
+            )
+          }
+
+      def add(worker: Worker[F, In, Out]): F[Unit] =
+        semaphore.release >> queue.offer(worker) >> totalWorkersRef.update(_ + 1)
+
+      def removeAll: F[Unit] =
+        for
+          totalWorkers <- totalWorkersRef.get
+          _ <- semaphore.acquireN(totalWorkers)
+          _ <- queue.take.replicateA(totalWorkers).void
+          _ <- totalWorkersRef.set(0)
+          _ <- semaphore.releaseN(totalWorkers)
+        yield ()
 }
