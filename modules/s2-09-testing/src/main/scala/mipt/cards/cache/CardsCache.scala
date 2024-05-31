@@ -15,15 +15,16 @@ trait CardsCache[F[_]]:
 
 object CardsCache:
 
+  def apply[F[_] : Functor](redisCommands: RedisCommands[F, String, String]): CardsCache[F] =
+    new Impl(redisCommands)
+  
   private class Impl[F[_]: Functor](redisCommands: RedisCommands[F, String, String]) extends CardsCache[F]:
     override def getUserCards(userId: UserId): F[List[Card]] =
-      redisCommands.get(userId).map {
-        case Some(value) => decode[List[Card]](value).getOrElse(List.empty)
-        case None        => List.empty
-      }
+      redisCommands.get(userId)
+        .map {
+          case Some(value) => decode[List[Card]](value).getOrElse(List.empty)
+          case None => List.empty
+        }
 
     override def putUserCards(userId: UserId, cards: List[Card]): F[Unit] =
-      redisCommands.set(userId, cards.asJson.noSpaces)
-
-  def apply[F[_]: Functor](redisCommands: RedisCommands[F, String, String]): CardsCache[F] =
-    new Impl(redisCommands)
+      redisCommands.set(userId, cards.asJson.toString)
